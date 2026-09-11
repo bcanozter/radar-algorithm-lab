@@ -15,11 +15,21 @@ qt_standard_project_setup()
 
 qt_add_executable(radar_algorithm_lab
     # core library
+    src/core/ConfigPort.cpp
+    src/core/ConfigPort.h
+    src/core/DataPort.cpp
+    src/core/DataPort.h
+    src/core/SerialPort.cpp
+    src/core/SerialPort.h
 
     # gui
     src/gui/main.cpp
     src/gui/MainWindow.cpp
     src/gui/MainWindow.h
+    src/gui/ConfigPanel.cpp
+    src/gui/ConfigPanel.h
+    src/gui/LogView.cpp
+    src/gui/LogView.h
 )
 
-target_link_libraries(radar_algorithm_lab PRIVATE Qt6::Core Qt6::Widgets)
+target_link_libraries(radar_algorithm_lab PRIVATE Qt6::Core Qt6::Widgets Qt6::SerialPort)
