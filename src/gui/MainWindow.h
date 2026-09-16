@@ -12,8 +12,19 @@ public:
   explicit MainWindow(QWidget *parent = nullptr);
 
 private slots:
+  void handleConnect_();
+  void handleDisconnect_();
 
 private:
   ConfigPanel *configPanel_;
   LogView *logView_;
+
+  QAction *connectAction_;
+  QAction *disconnectAction_;
+
+  ConfigPort configPort_;
+  DataPort dataPort_;
+
+  QString currentConfigPortAddr;
+  QString currentDataPortAddr;
 };

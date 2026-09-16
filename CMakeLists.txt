@@ -30,6 +30,14 @@ qt_add_executable(radar_algorithm_lab
     src/gui/ConfigPanel.h
     src/gui/LogView.cpp
     src/gui/LogView.h
+    src/gui/ConnectDialog.cpp
+    src/gui/ConnectDialog.h
 )
 
 target_link_libraries(radar_algorithm_lab PRIVATE Qt6::Core Qt6::Widgets Qt6::SerialPort)
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE QT_MESSAGELOGCONTEXT)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE QT_NO_DEBUG_OUTPUT)
+endif()
