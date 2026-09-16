@@ -14,6 +14,9 @@ public:
 private slots:
   void handleConnect_();
   void handleDisconnect_();
+  void onSendConfigRequested(const QStringList& lines);
+  void onStartSensorRequested();
+  void onStopSensorRequested();
 
 private:
   ConfigPanel *configPanel_;

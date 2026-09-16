@@ -15,3 +15,7 @@ LogView::LogView(QWidget *parent) : QWidget(parent) {
   auto *layout = new QVBoxLayout(this);
   layout->addWidget(text_);
 }
+
+void LogView::appendMessage(const QString &text) {
+  text_->appendPlainText(text);
+}

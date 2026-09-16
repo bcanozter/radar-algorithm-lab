@@ -60,13 +60,17 @@ void ConfigPanel::handleLoadConfig_() {
 }
 
 void ConfigPanel::handleSendConfig_() {
-  // TODO
+  emit sendConfigRequested(getEditorLines());
 }
 
 void ConfigPanel::handleStartSensor_() {
-  // TODO
+  emit startSensorRequested();
 }
 
 void ConfigPanel::handleStopSensor_() {
-  // TODO
+  emit stopSensorRequested();
+}
+
+QStringList ConfigPanel::getEditorLines() const {
+  return editor_->toPlainText().split('\n');
 }

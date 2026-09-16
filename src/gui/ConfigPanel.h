@@ -11,11 +11,14 @@ class ConfigPanel : public QWidget {
   Q_OBJECT
 public:
   explicit ConfigPanel(QWidget *parent = nullptr);
+  QStringList getEditorLines() const;
 
 public slots:
 
 signals:
-
+  void sendConfigRequested(const QStringList& lines);
+  void startSensorRequested();
+  void stopSensorRequested();
 private slots:
   void handleLoadConfig_();
   void handleSendConfig_();

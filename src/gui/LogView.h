@@ -10,6 +10,7 @@ public:
   explicit LogView(QWidget *parent = nullptr);
 
 public slots:
+  void appendMessage(const QString &text);
 
 private:
   QPlainTextEdit *text_;

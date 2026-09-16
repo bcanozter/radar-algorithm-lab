@@ -15,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   resize(1500, 820);
   configPanel_ = new ConfigPanel(this);
   logView_ = new LogView(this);
+  configPort_.setLogView(logView_);
 
   // test
   // const auto ports = getAvailablePorts();
@@ -40,6 +41,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   QToolBar *toolbar = addToolBar(tr("Connection"));
   toolbar->addAction(connectAction_);
   toolbar->addAction(disconnectAction_);
+
+
+  connect(configPanel_, &ConfigPanel::sendConfigRequested, this, &MainWindow::onSendConfigRequested);
+  connect(configPanel_, &ConfigPanel::startSensorRequested, this, &MainWindow::onStartSensorRequested);
+  connect(configPanel_, &ConfigPanel::stopSensorRequested, this, &MainWindow::onStopSensorRequested);
 }
 
 void MainWindow::handleConnect_() {
@@ -85,4 +91,16 @@ void MainWindow::handleDisconnect_() {
   configPort_.disconnectPort();
   connectAction_->setEnabled(true);
   disconnectAction_->setEnabled(false);
+}
+
+void MainWindow::onSendConfigRequested(const QStringList& lines){
+    configPort_.sendConfigFile(lines);
+}
+
+void MainWindow::onStartSensorRequested(){
+  configPort_.sendCommand("sensorStart 0");
+}
+
+void MainWindow::onStopSensorRequested(){
+  configPort_.sendCommand("sensorStop");
 }
