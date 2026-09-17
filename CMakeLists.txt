@@ -9,7 +9,7 @@ if(NOT DEFINED CMAKE_PREFIX_PATH OR CMAKE_PREFIX_PATH STREQUAL "")
     set(CMAKE_PREFIX_PATH "$ENV{HOME}/Qt/6.11.1/gcc_64")
 endif()
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets SerialPort)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets SerialPort Charts)
 
 qt_standard_project_setup()
 
@@ -35,9 +35,11 @@ qt_add_executable(radar_algorithm_lab
     src/gui/LogView.h
     src/gui/ConnectDialog.cpp
     src/gui/ConnectDialog.h
+    src/gui/RangeProfileChart.cpp
+    src/gui/RangeProfileChart.h
 )
 
-target_link_libraries(radar_algorithm_lab PRIVATE Qt6::Core Qt6::Widgets Qt6::SerialPort)
+target_link_libraries(radar_algorithm_lab PRIVATE Qt6::Core Qt6::Widgets Qt6::SerialPort Qt6::Charts)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE QT_MESSAGELOGCONTEXT)
 

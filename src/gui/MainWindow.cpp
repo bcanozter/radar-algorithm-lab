@@ -5,10 +5,13 @@
 #include <QSplitter>
 #include <QToolBar>
 
+#include <bitset>
+
 #include "../core/SerialPort.h"
 #include "ConfigPanel.h"
 #include "ConnectDialog.h"
 #include "LogView.h"
+#include "RangeProfileChart.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setWindowTitle(tr("Radar Algorithm Lab"));
@@ -17,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   logView_ = new LogView(this);
   configPort_.setLogView(logView_);
 
+  rangeProfileChart_ = new RangeProfileChart(this);
   // test
   // const auto ports = getAvailablePorts();
 
@@ -26,8 +30,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   configSplitter->setStretchFactor(0, 3);
   configSplitter->setStretchFactor(1, 2);
 
+  auto *visualizeSplitter = new QSplitter(Qt::Horizontal, this);
+  visualizeSplitter->addWidget(rangeProfileChart_);
+
   auto *tabs = new QTabWidget(this);
   tabs->addTab(configSplitter, tr("Config"));
+  tabs->addTab(visualizeSplitter, tr("Plots"));
   setCentralWidget(tabs);
 
   connectAction_ = new QAction(tr("Connect"), this);
@@ -101,6 +109,7 @@ void MainWindow::handleDisconnect_() {
 }
 
 void MainWindow::onSendConfigRequested(const QStringList &lines) {
+  updateRadarConfigFromCfg_(lines);
   configPort_.sendConfigFile(lines);
 }
 
@@ -113,5 +122,44 @@ void MainWindow::onStopSensorRequested() {
 }
 
 void MainWindow::handleIncomingFrame(const Frame &frame) {
-  // todo
+  rangeProfileChart_->updateProfile(frame.rangeProfile);
+}
+
+// mmwave sdk user guide explains these .cfg parameters
+void MainWindow::updateRadarConfigFromCfg_(const QStringList &lines) {
+  for (const QString &raw : lines) {
+    const QString line = raw.trimmed();
+
+    if (line.startsWith(QLatin1String("profileCfg"))) {
+      const QStringList tokens = line.split(' ', Qt::SkipEmptyParts);
+      if (tokens.size() < 12) {
+        continue;
+      }
+
+      const double freqSlopeConst = tokens[8].toDouble(); // MHz/us
+      const int numAdcSamples = tokens[10].toInt();
+      const double digOutSampleRate = tokens[11].toDouble(); // ksps
+      if (freqSlopeConst <= 0.0 || numAdcSamples <= 0 ||
+          digOutSampleRate <= 0.0) {
+        continue;
+      }
+
+      constexpr double kSpeedOfLight = 3.0e8; // m/s
+      const double maxRange = (kSpeedOfLight * digOutSampleRate * 1e3) /
+                              (2.0 * freqSlopeConst * 1e12);
+      rangeProfileChart_->setMaxRange(maxRange);
+    } else if (line.startsWith(QLatin1String("channelCfg"))) {
+      const QStringList tokens = line.split(' ', Qt::SkipEmptyParts);
+      if (tokens.size() < 3) {
+        continue;
+      }
+
+      const uint32_t rxChannelEn = tokens[1].toUInt(nullptr, 0);
+      const uint32_t txChannelEn = tokens[2].toUInt(nullptr, 0);
+      // 0x1111b = 15 -> 4 antennas
+      const int numRxAntennas = std::bitset<4>(rxChannelEn).count();
+      const int numTxAntennas = std::bitset<4>(txChannelEn).count();
+      rangeProfileChart_->setAntennaCount(numRxAntennas, numTxAntennas);
+    }
+  }
 }
