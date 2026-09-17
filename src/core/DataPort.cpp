@@ -1,5 +1,6 @@
 #include "DataPort.h"
 
+#include "DataParser.h"
 #include "SerialPort.h"
 
 DataPort::DataPort(QObject *parent) : QObject(parent) {
@@ -18,5 +19,11 @@ void DataPort::disconnectPort() {
 }
 
 void DataPort::onReadyRead() {
-  // todo
+  const QByteArray data = port_.readAll();
+  rxBuffer_.reserve(rxBuffer_.size() + data.size());
+  rxBuffer_.insert(rxBuffer_.end(), data.cbegin(), data.cend());
+  //
+  for (const Frame &frame : parser_.parse(rxBuffer_)) {
+    emit frameReceived(frame);
+  }
 }

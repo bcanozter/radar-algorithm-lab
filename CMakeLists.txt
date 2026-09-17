@@ -21,6 +21,9 @@ qt_add_executable(radar_algorithm_lab
     src/core/DataPort.h
     src/core/SerialPort.cpp
     src/core/SerialPort.h
+    src/core/TlvTypes.h
+    src/core/DataParser.cpp
+    src/core/DataParser.h
 
     # gui
     src/gui/main.cpp

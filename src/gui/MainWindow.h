@@ -2,6 +2,7 @@
 
 #include "../core/ConfigPort.h"
 #include "../core/DataPort.h"
+#include "../core/DataParser.h"
 #include <QMainWindow>
 
 class ConfigPanel;
@@ -17,6 +18,7 @@ private slots:
   void onSendConfigRequested(const QStringList& lines);
   void onStartSensorRequested();
   void onStopSensorRequested();
+  void handleIncomingFrame(const Frame& frame);
 
 private:
   ConfigPanel *configPanel_;

@@ -42,10 +42,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   toolbar->addAction(connectAction_);
   toolbar->addAction(disconnectAction_);
 
+  connect(configPanel_, &ConfigPanel::sendConfigRequested, this,
+          &MainWindow::onSendConfigRequested);
+  connect(configPanel_, &ConfigPanel::startSensorRequested, this,
+          &MainWindow::onStartSensorRequested);
+  connect(configPanel_, &ConfigPanel::stopSensorRequested, this,
+          &MainWindow::onStopSensorRequested);
 
-  connect(configPanel_, &ConfigPanel::sendConfigRequested, this, &MainWindow::onSendConfigRequested);
-  connect(configPanel_, &ConfigPanel::startSensorRequested, this, &MainWindow::onStartSensorRequested);
-  connect(configPanel_, &ConfigPanel::stopSensorRequested, this, &MainWindow::onStopSensorRequested);
+  // incoming data
+
+  connect(&dataPort_, &DataPort::frameReceived, this,
+          &MainWindow::handleIncomingFrame);
 }
 
 void MainWindow::handleConnect_() {
@@ -93,14 +100,18 @@ void MainWindow::handleDisconnect_() {
   disconnectAction_->setEnabled(false);
 }
 
-void MainWindow::onSendConfigRequested(const QStringList& lines){
-    configPort_.sendConfigFile(lines);
+void MainWindow::onSendConfigRequested(const QStringList &lines) {
+  configPort_.sendConfigFile(lines);
 }
 
-void MainWindow::onStartSensorRequested(){
+void MainWindow::onStartSensorRequested() {
   configPort_.sendCommand("sensorStart 0");
 }
 
-void MainWindow::onStopSensorRequested(){
+void MainWindow::onStopSensorRequested() {
   configPort_.sendCommand("sensorStop");
+}
+
+void MainWindow::handleIncomingFrame(const Frame &frame) {
+  // todo
 }

@@ -4,7 +4,8 @@
 #include <QtSerialPort/QSerialPort>
 
 #include <vector>
-
+#include "DataParser.h"
+#include "TlvTypes.h"
 class DataPort : public QObject {
   Q_OBJECT
 public:
@@ -15,10 +16,14 @@ public:
   void disconnectPort();
   bool isConnected() const { return port_.isOpen(); }
 
+signals:
+    void frameReceived(const Frame& frame);
+
 private slots:
   void onReadyRead();
 
 private:
+  DataParser parser_;
   QSerialPort port_;
   std::vector<uint8_t> rxBuffer_;
 };
