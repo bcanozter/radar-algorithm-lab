@@ -75,6 +75,13 @@ bool DataParser::decodeFrame(const uint8_t *data, uint32_t len,
       }
       break;
     }
+    case MmwDemo_output_message_type::MMWDEMO_OUTPUT_MSG_TEMPERATURE_STATS: {
+      if (tlv.length >= sizeof(MmwDemo_output_message_temperature_stats)) {
+        std::memcpy(&outFrame.temperatureStats, payload,
+                    sizeof(MmwDemo_output_message_temperature_stats));
+      }
+      break;
+    }
     default:
       qDebug() << "Unknown TLV Type (" << tlv.type << ")";
       break;

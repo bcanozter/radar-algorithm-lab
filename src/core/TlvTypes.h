@@ -13,70 +13,90 @@
 // header.magicWord[2] = 0x0506;
 // header.magicWord[3] = 0x0708;
 static constexpr std::array<uint8_t, 8> kMagicWord = {0x02, 0x01, 0x04, 0x03,
-                                                       0x06, 0x05, 0x08, 0x07};
+                                                      0x06, 0x05, 0x08, 0x07};
 
 enum class MmwDemo_output_message_type : uint32_t {
-    MMWDEMO_OUTPUT_MSG_DETECTED_POINTS = 1,
-    MMWDEMO_OUTPUT_MSG_RANGE_PROFILE,
-    MMWDEMO_OUTPUT_MSG_NOISE_PROFILE,
-    MMWDEMO_OUTPUT_MSG_AZIMUT_STATIC_HEAT_MAP,
-    MMWDEMO_OUTPUT_MSG_RANGE_DOPPLER_HEAT_MAP,
-    MMWDEMO_OUTPUT_MSG_STATS,
-    MMWDEMO_OUTPUT_MSG_DETECTED_POINTS_SIDE_INFO,
-    MMWDEMO_OUTPUT_MSG_AZIMUT_ELEVATION_STATIC_HEAT_MAP,
-    MMWDEMO_OUTPUT_MSG_TEMPERATURE_STATS,
-    MMWDEMO_OUTPUT_MSG_MAX
+  MMWDEMO_OUTPUT_MSG_DETECTED_POINTS = 1,
+  MMWDEMO_OUTPUT_MSG_RANGE_PROFILE,
+  MMWDEMO_OUTPUT_MSG_NOISE_PROFILE,
+  MMWDEMO_OUTPUT_MSG_AZIMUT_STATIC_HEAT_MAP,
+  MMWDEMO_OUTPUT_MSG_RANGE_DOPPLER_HEAT_MAP,
+  MMWDEMO_OUTPUT_MSG_STATS,
+  MMWDEMO_OUTPUT_MSG_DETECTED_POINTS_SIDE_INFO,
+  MMWDEMO_OUTPUT_MSG_AZIMUT_ELEVATION_STATIC_HEAT_MAP,
+  MMWDEMO_OUTPUT_MSG_TEMPERATURE_STATS,
+  MMWDEMO_OUTPUT_MSG_MAX
 };
 
 #pragma pack(push, 1)
 
 struct MmwDemo_output_message_header {
-    uint16_t magicWord[4];
-    uint32_t version;
-    uint32_t totalPacketLen;
-    uint32_t platform;
-    uint32_t frameNumber;
-    uint32_t timeCpuCycles;
-    uint32_t numDetectedObj;
-    uint32_t numTLVs;
-    uint32_t subFrameNumber;
+  uint16_t magicWord[4];
+  uint32_t version;
+  uint32_t totalPacketLen;
+  uint32_t platform;
+  uint32_t frameNumber;
+  uint32_t timeCpuCycles;
+  uint32_t numDetectedObj;
+  uint32_t numTLVs;
+  uint32_t subFrameNumber;
 };
 
 struct MmwDemo_output_message_tl {
-    uint32_t type;
-    uint32_t length;
+  uint32_t type;
+  uint32_t length;
 };
 
 struct DetectedPoint {
-    float x;
-    float y;
-    float z;
-    float velocity;
+  float x;
+  float y;
+  float z;
+  float velocity;
 };
 
 struct PointSideInfo {
-    int16_t snr;
-    int16_t noise;
+  int16_t snr;
+  int16_t noise;
 };
 
 struct MmwDemo_output_message_stats {
-    uint32_t interFrameProcessingTime;
-    uint32_t transmitOutputTime;
-    uint32_t interFrameProcessingMargin;
-    uint32_t interChirpProcessingMargin;
-    uint32_t activeFrameCPULoad;
-    uint32_t interFrameCPULoad;
+  uint32_t interFrameProcessingTime;
+  uint32_t transmitOutputTime;
+  uint32_t interFrameProcessingMargin;
+  uint32_t interChirpProcessingMargin;
+  uint32_t activeFrameCPULoad;
+  uint32_t interFrameCPULoad;
+};
+
+struct RfTempData {
+  uint32_t time;
+  int16_t tmpRx0Sens;
+  int16_t tmpRx1Sens;
+  int16_t tmpRx2Sens;
+  int16_t tmpRx3Sens;
+  int16_t tmpTx0Sens;
+  int16_t tmpTx1Sens;
+  int16_t tmpTx2Sens;
+  int16_t tmpPmSens;
+  int16_t tmpDig0Sens;
+  int16_t tmpDig1Sens;
+};
+
+struct MmwDemo_output_message_temperature_stats {
+  int32_t tempReportValid;
+  RfTempData temperatureReport;
 };
 
 #pragma pack(pop)
 
 struct Frame {
-    MmwDemo_output_message_header header{};
-    std::vector<DetectedPoint> points;
-    std::vector<PointSideInfo> pointSideInfo;
-    std::vector<uint16_t> rangeProfile;
-    std::vector<uint16_t> noiseProfile;
-    MmwDemo_output_message_stats stats{};
+  MmwDemo_output_message_header header{};
+  std::vector<DetectedPoint> points;
+  std::vector<PointSideInfo> pointSideInfo;
+  std::vector<uint16_t> rangeProfile;
+  std::vector<uint16_t> noiseProfile;
+  MmwDemo_output_message_stats stats{};
+  MmwDemo_output_message_temperature_stats temperatureStats{};
 
-    std::vector<uint8_t> rawBytes;
+  std::vector<uint8_t> rawBytes;
 };

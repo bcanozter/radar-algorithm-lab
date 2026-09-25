@@ -10,8 +10,10 @@
 #include "../core/SerialPort.h"
 #include "ConfigPanel.h"
 #include "ConnectDialog.h"
+#include "DeviceStatsPanel.h"
 #include "LogView.h"
 #include "RangeProfileChart.h"
+#include "ScatterPlot2D.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setWindowTitle(tr("Radar Algorithm Lab"));
@@ -21,6 +23,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   configPort_.setLogView(logView_);
 
   rangeProfileChart_ = new RangeProfileChart(this);
+  scatterPlot2D_ = new ScatterPlot2D(this);
+  deviceStatsPanel_ = new DeviceStatsPanel(this);
   // test
   // const auto ports = getAvailablePorts();
 
@@ -32,10 +36,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
   auto *visualizeSplitter = new QSplitter(Qt::Horizontal, this);
   visualizeSplitter->addWidget(rangeProfileChart_);
+  visualizeSplitter->addWidget(scatterPlot2D_);
+  visualizeSplitter->setStretchFactor(0, 1);
+  visualizeSplitter->setStretchFactor(1, 1);
+  visualizeSplitter->setSizes({750, 750});
+
+  auto *plotsSplitter = new QSplitter(Qt::Vertical, this);
+  plotsSplitter->addWidget(visualizeSplitter);
+  plotsSplitter->addWidget(deviceStatsPanel_);
+  plotsSplitter->setStretchFactor(0, 4);
+  plotsSplitter->setStretchFactor(1, 1);
+  plotsSplitter->setSizes({600, 180});
 
   auto *tabs = new QTabWidget(this);
   tabs->addTab(configSplitter, tr("Config"));
-  tabs->addTab(visualizeSplitter, tr("Plots"));
+  tabs->addTab(plotsSplitter, tr("Plots"));
   setCentralWidget(tabs);
 
   connectAction_ = new QAction(tr("Connect"), this);
@@ -123,6 +138,8 @@ void MainWindow::onStopSensorRequested() {
 
 void MainWindow::handleIncomingFrame(const Frame &frame) {
   rangeProfileChart_->updateProfile(frame.rangeProfile);
+  scatterPlot2D_->updatePoints(frame.points);
+  deviceStatsPanel_->updateFrame(frame);
 }
 
 // mmwave sdk user guide explains these .cfg parameters
@@ -148,6 +165,7 @@ void MainWindow::updateRadarConfigFromCfg_(const QStringList &lines) {
       const double maxRange = (kSpeedOfLight * digOutSampleRate * 1e3) /
                               (2.0 * freqSlopeConst * 1e12);
       rangeProfileChart_->setMaxRange(maxRange);
+      scatterPlot2D_->setMaxRange(maxRange);
     } else if (line.startsWith(QLatin1String("channelCfg"))) {
       const QStringList tokens = line.split(' ', Qt::SkipEmptyParts);
       if (tokens.size() < 3) {

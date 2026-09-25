@@ -37,6 +37,10 @@ qt_add_executable(radar_algorithm_lab
     src/gui/ConnectDialog.h
     src/gui/RangeProfileChart.cpp
     src/gui/RangeProfileChart.h
+    src/gui/ScatterPlot2D.cpp
+    src/gui/ScatterPlot2D.h
+    src/gui/DeviceStatsPanel.cpp
+    src/gui/DeviceStatsPanel.h
 )
 
 target_link_libraries(radar_algorithm_lab PRIVATE Qt6::Core Qt6::Widgets Qt6::SerialPort Qt6::Charts)

@@ -8,6 +8,8 @@
 class ConfigPanel;
 class LogView;
 class RangeProfileChart;
+class ScatterPlot2D;
+class DeviceStatsPanel;
 class MainWindow : public QMainWindow {
   Q_OBJECT
 public:
@@ -27,6 +29,8 @@ private:
   ConfigPanel *configPanel_;
   LogView *logView_;
   RangeProfileChart *rangeProfileChart_;
+  ScatterPlot2D *scatterPlot2D_;
+  DeviceStatsPanel *deviceStatsPanel_;
 
   QAction *connectAction_;
   QAction *disconnectAction_;
