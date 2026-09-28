@@ -24,6 +24,8 @@ qt_add_executable(radar_algorithm_lab
     src/core/TlvTypes.h
     src/core/DataParser.cpp
     src/core/DataParser.h
+    src/core/Recording.cpp
+    src/core/Recording.h
 
     # gui
     src/gui/main.cpp
@@ -41,6 +43,8 @@ qt_add_executable(radar_algorithm_lab
     src/gui/ScatterPlot2D.h
     src/gui/DeviceStatsPanel.cpp
     src/gui/DeviceStatsPanel.h
+    src/gui/ReplayBar.cpp
+    src/gui/ReplayBar.h
 )
 
 target_link_libraries(radar_algorithm_lab PRIVATE Qt6::Core Qt6::Widgets Qt6::SerialPort Qt6::Charts)

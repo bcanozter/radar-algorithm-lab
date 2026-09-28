@@ -1,8 +1,13 @@
 #include "MainWindow.h"
 
 #include <QAction>
+#include <QDateTime>
 #include <QDebug>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QLabel>
 #include <QSplitter>
+#include <QStatusBar>
 #include <QToolBar>
 
 #include <bitset>
@@ -13,6 +18,7 @@
 #include "DeviceStatsPanel.h"
 #include "LogView.h"
 #include "RangeProfileChart.h"
+#include "ReplayBar.h"
 #include "ScatterPlot2D.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
@@ -61,9 +67,31 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   connect(disconnectAction_, &QAction::triggered, this,
           &MainWindow::handleDisconnect_);
 
+  recordAction_ = new QAction(tr("Record"), this);
+  recordAction_->setCheckable(true);
+  recordAction_->setEnabled(false);
+  loadRecordingAction_ = new QAction(tr("Load Recording"), this);
+  connect(recordAction_, &QAction::triggered, this, &MainWindow::handleRecord_);
+  connect(loadRecordingAction_, &QAction::triggered, this,
+          &MainWindow::handleLoadRecording_);
+
   QToolBar *toolbar = addToolBar(tr("Connection"));
   toolbar->addAction(connectAction_);
   toolbar->addAction(disconnectAction_);
+  toolbar->addSeparator();
+  toolbar->addAction(recordAction_);
+  toolbar->addAction(loadRecordingAction_);
+
+  QToolBar *replayToolbar = addToolBar(tr("Replay"));
+  replayToolbar->addWidget(new ReplayBar(&recording_, this));
+
+  recordingLabel_ = new QLabel(this);
+  recordingLabel_->setStyleSheet("color: red; font-weight: bold;");
+  recordingLabel_->hide();
+  statusBar()->addPermanentWidget(recordingLabel_);
+  recordingStatusTimer_.setInterval(1000);
+  connect(&recordingStatusTimer_, &QTimer::timeout, this,
+          &MainWindow::updateRecordingStatus_);
 
   connect(configPanel_, &ConfigPanel::sendConfigRequested, this,
           &MainWindow::onSendConfigRequested);
@@ -75,6 +103,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   // incoming data
 
   connect(&dataPort_, &DataPort::frameReceived, this,
+          &MainWindow::handleIncomingFrame);
+  connect(&dataPort_, &DataPort::frameReceived, &recording_,
+          &Recording::writeFrame);
+  connect(&recording_, &Recording::frameReceived, this,
           &MainWindow::handleIncomingFrame);
 }
 
@@ -112,18 +144,105 @@ void MainWindow::handleConnect_() {
   currentConfigPortAddr = newConfigPortAddr;
   currentDataPortAddr = newDataPortAddr;
 
+  // live data and replay both feed the same plots
+  recording_.unload();
+
   connectAction_->setEnabled(false);
   disconnectAction_->setEnabled(true);
+  recordAction_->setEnabled(true);
+  loadRecordingAction_->setEnabled(false);
 }
 
 void MainWindow::handleDisconnect_() {
+  recording_.stopRecording();
   dataPort_.disconnectPort();
   configPort_.disconnectPort();
   connectAction_->setEnabled(true);
   disconnectAction_->setEnabled(false);
+  recordAction_->setEnabled(false);
+  loadRecordingAction_->setEnabled(true);
+  updateRecordingUi_();
+}
+
+void MainWindow::handleRecord_(bool checked) {
+  if (checked) {
+    startRecording_();
+  } else {
+    recording_.stopRecording();
+    qInfo() << "Recording stopped";
+  }
+  updateRecordingUi_();
+}
+
+void MainWindow::startRecording_() {
+  const QString defaultName =
+      "recording_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") +
+      ".bin";
+  QString path = QFileDialog::getSaveFileName(
+      this, tr("Save Recording"), defaultName, tr("Recordings (*.bin)"));
+  if (path.isEmpty()) {
+    return;
+  }
+  if (!path.endsWith(".bin")) {
+    path += ".bin";
+  }
+
+  QString error;
+  if (!recording_.startRecording(path, lastCfgLines_, error)) {
+    qWarning() << "Unable to start recording:" << error;
+    return;
+  }
+  qInfo() << "Recording to" << path;
+}
+
+// Keep the Record button and the status bar in sync with the recording.
+void MainWindow::updateRecordingUi_() {
+  const bool recording = recording_.isRecording();
+  recordAction_->setChecked(recording);
+  recordAction_->setText(recording ? tr("Stop Recording") : tr("Record"));
+  recordingLabel_->setVisible(recording);
+  if (recording) {
+    updateRecordingStatus_();
+    recordingStatusTimer_.start();
+  } else {
+    recordingStatusTimer_.stop();
+  }
+}
+
+void MainWindow::updateRecordingStatus_() {
+  const qint64 seconds = recording_.elapsedMs() / 1000;
+  const double megabytes = recording_.bytesWritten() / (1024.0 * 1024.0);
+  recordingLabel_->setText(QString("* REC  %1:%2  ·  %3 MB  ·  %4")
+                               .arg(seconds / 60, 2, 10, QChar('0'))
+                               .arg(seconds % 60, 2, 10, QChar('0'))
+                               .arg(megabytes, 0, 'f', 1)
+                               .arg(QFileInfo(recording_.path()).fileName()));
+}
+
+void MainWindow::handleLoadRecording_() {
+  const QString path = QFileDialog::getOpenFileName(
+      this, tr("Load Recording"), QString(), tr("Recordings (*.bin)"));
+  if (path.isEmpty()) {
+    return;
+  }
+
+  QString error;
+  if (!recording_.load(path, error)) {
+    qWarning() << "Unable to load recording:" << error;
+    return;
+  }
+  if (recording_.cfgLines().isEmpty()) {
+    qWarning() << "No .cfg found next to the recording, plot ranges may be off";
+  } else {
+    updateRadarConfigFromCfg_(recording_.cfgLines());
+  }
+  qInfo() << "Loaded recording" << path << "with" << recording_.frameCount()
+          << "frames";
+  recording_.seek(0);
 }
 
 void MainWindow::onSendConfigRequested(const QStringList &lines) {
+  lastCfgLines_ = lines;
   updateRadarConfigFromCfg_(lines);
   configPort_.sendConfigFile(lines);
 }

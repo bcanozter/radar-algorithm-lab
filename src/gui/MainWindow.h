@@ -3,8 +3,11 @@
 #include "../core/ConfigPort.h"
 #include "../core/DataParser.h"
 #include "../core/DataPort.h"
+#include "../core/Recording.h"
 #include <QMainWindow>
+#include <QTimer>
 
+class QLabel;
 class ConfigPanel;
 class LogView;
 class RangeProfileChart;
@@ -22,9 +25,14 @@ private slots:
   void onStartSensorRequested();
   void onStopSensorRequested();
   void handleIncomingFrame(const Frame &frame);
+  void handleRecord_(bool checked);
+  void handleLoadRecording_();
 
 private:
   void updateRadarConfigFromCfg_(const QStringList &lines);
+  void startRecording_();
+  void updateRecordingUi_();
+  void updateRecordingStatus_();
 
   ConfigPanel *configPanel_;
   LogView *logView_;
@@ -34,10 +42,17 @@ private:
 
   QAction *connectAction_;
   QAction *disconnectAction_;
+  QAction *recordAction_;
+  QAction *loadRecordingAction_;
+  QLabel *recordingLabel_;
+  QTimer recordingStatusTimer_;
 
   ConfigPort configPort_;
   DataPort dataPort_;
+  Recording recording_;
 
   QString currentConfigPortAddr;
   QString currentDataPortAddr;
+  // last cfg sent to the device
+  QStringList lastCfgLines_;
 };
