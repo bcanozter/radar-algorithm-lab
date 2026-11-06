@@ -1,15 +1,13 @@
 #include "RangeProfileChart.h"
 
+#include "../core/utils.h"
+
 #include <QChartView>
 #include <QPainter>
 #include <QVBoxLayout>
 
 // Reference:
 //  https://dev.ti.com/gallery/view/mmwave/mmWave_Demo_Visualizer/ver/3.6.0/
-
-double dspFftScalComp2(double fftMinSize, double fftSize) {
-  return fftMinSize / fftSize;
-}
 
 RangeProfileChart::RangeProfileChart(QWidget *parent) : QWidget(parent) {
   series_ = new QLineSeries();
@@ -56,12 +54,6 @@ void RangeProfileChart::setAntennaCount(int numRxAntennas, int numTxAntennas) {
   numTxAntennas_ = numTxAntennas;
 }
 
-double RangeProfileChart::toRelativeDb(uint16_t raw, double log2linScale,
-                                       double dspFftScaleCompAllLog) const {
-  constexpr double kToDB = 20.0 * std::log10(2);
-  return raw * log2linScale * kToDB + dspFftScaleCompAllLog;
-}
-
 void RangeProfileChart::updateProfile(
     const std::vector<uint16_t> &rangeProfile) {
   if (rangeProfile.empty()) {
@@ -72,13 +64,7 @@ void RangeProfileChart::updateProfile(
 
   // P.log2linScale[idx] = (1/256) * (2^ceil(log2(NumVirtAnt)) / NumVirtAnt);
   const int numVirtAnt = numRxAntennas_ * numTxAntennas_;
-  const double log2linScale = (1.0 / 256.0) *
-                              std::pow(2, std::ceil(std::log2(numVirtAnt))) /
-                              numVirtAnt;
-
-  const double dspFftScaleComp1DLog =
-      20.0 * std::log10(dspFftScalComp2(32.0, rangeProfile.size()));
-  const double dspFftScaleCompAllLog = dspFftScaleComp1DLog;
+  const int numRangeBins = static_cast<int>(rangeProfile.size());
 
   QList<QPointF> points;
   points.reserve(rangeProfile.size());
@@ -87,8 +73,8 @@ void RangeProfileChart::updateProfile(
   double maxDb = 0;
   for (size_t binIdx = 0; binIdx < rangeProfile.size(); ++binIdx) {
     const double range = binIdx * rangeResolution;
-    const double db =
-        toRelativeDb(rangeProfile[binIdx], log2linScale, dspFftScaleCompAllLog);
+    const double db = log2MagnitudeToDb(rangeProfile[binIdx],
+                                        numVirtAnt, numRangeBins);
     points.append(QPointF(range, db));
     minDb = std::min(minDb, db);
     maxDb = std::max(maxDb, db);

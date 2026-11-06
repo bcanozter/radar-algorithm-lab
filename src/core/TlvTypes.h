@@ -95,6 +95,7 @@ struct Frame {
   std::vector<PointSideInfo> pointSideInfo;
   std::vector<uint16_t> rangeProfile;
   std::vector<uint16_t> noiseProfile;
+  std::vector<uint16_t> rangeDopplerHeatMap;
   MmwDemo_output_message_stats stats{};
   MmwDemo_output_message_temperature_stats temperatureStats{};
 

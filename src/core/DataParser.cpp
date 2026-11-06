@@ -68,6 +68,14 @@ bool DataParser::decodeFrame(const uint8_t *data, uint32_t len,
       std::memcpy(outFrame.noiseProfile.data(), payload, n * sizeof(uint16_t));
       break;
     }
+    case MmwDemo_output_message_type::
+        MMWDEMO_OUTPUT_MSG_RANGE_DOPPLER_HEAT_MAP: {
+      const size_t n = tlv.length / sizeof(uint16_t);
+      outFrame.rangeDopplerHeatMap.resize(n);
+      std::memcpy(outFrame.rangeDopplerHeatMap.data(), payload,
+                  n * sizeof(uint16_t));
+      break;
+    }
     case MmwDemo_output_message_type::MMWDEMO_OUTPUT_MSG_STATS: {
       if (tlv.length >= sizeof(MmwDemo_output_message_stats)) {
         std::memcpy(&outFrame.stats, payload,

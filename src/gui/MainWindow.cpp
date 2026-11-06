@@ -13,10 +13,12 @@
 #include <bitset>
 
 #include "../core/SerialPort.h"
+#include "../core/utils.h"
 #include "ConfigPanel.h"
 #include "ConnectDialog.h"
 #include "DeviceStatsPanel.h"
 #include "LogView.h"
+#include "RangeDopplerHeatmap.h"
 #include "RangeProfileChart.h"
 #include "ReplayBar.h"
 #include "ScatterPlot2D.h"
@@ -31,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   rangeProfileChart_ = new RangeProfileChart(this);
   scatterPlot2D_ = new ScatterPlot2D(this);
   deviceStatsPanel_ = new DeviceStatsPanel(this);
+  rangeDopplerHeatmap_ = new RangeDopplerHeatmap(this);
   // test
   // const auto ports = getAvailablePorts();
 
@@ -41,11 +44,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   configSplitter->setStretchFactor(1, 2);
 
   auto *visualizeSplitter = new QSplitter(Qt::Horizontal, this);
+  visualizeSplitter->addWidget(rangeDopplerHeatmap_);
   visualizeSplitter->addWidget(rangeProfileChart_);
   visualizeSplitter->addWidget(scatterPlot2D_);
   visualizeSplitter->setStretchFactor(0, 1);
   visualizeSplitter->setStretchFactor(1, 1);
-  visualizeSplitter->setSizes({750, 750});
+  visualizeSplitter->setStretchFactor(2, 1);
+  visualizeSplitter->setSizes({500, 500, 500});
 
   auto *plotsSplitter = new QSplitter(Qt::Vertical, this);
   plotsSplitter->addWidget(visualizeSplitter);
@@ -263,6 +268,13 @@ void MainWindow::handleIncomingFrame(const Frame &frame) {
 
 // mmwave sdk user guide explains these .cfg parameters
 void MainWindow::updateRadarConfigFromCfg_(const QStringList &lines) {
+  double startFreqGhz = 0.0;
+  double idleTimeUs = 0.0;
+  double rampEndTimeUs = 0.0;
+  int numDopplerBins = 0;
+  int numRxAntennas = 0;
+  int numTxAntennas = 0;
+
   for (const QString &raw : lines) {
     const QString line = raw.trimmed();
 
@@ -285,6 +297,23 @@ void MainWindow::updateRadarConfigFromCfg_(const QStringList &lines) {
                               (2.0 * freqSlopeConst * 1e12);
       rangeProfileChart_->setMaxRange(maxRange);
       scatterPlot2D_->setMaxRange(maxRange);
+      rangeDopplerHeatmap_->setMaxRange(maxRange);
+      rangeDopplerHeatmap_->setRangeBins(numAdcSamples);
+
+      startFreqGhz = tokens[2].toDouble();
+      idleTimeUs = tokens[3].toDouble();
+      rampEndTimeUs = tokens[5].toDouble();
+    } else if (line.startsWith(QLatin1String("frameCfg"))) {
+      const QStringList tokens = line.split(' ', Qt::SkipEmptyParts);
+      if (tokens.size() < 6) {
+        continue;
+      }
+      const int numLoops = tokens[3].toInt();
+      if (numLoops <= 0) {
+        continue;
+      }
+      rangeDopplerHeatmap_->setDopplerBins(numLoops);
+      numDopplerBins = numLoops;
     } else if (line.startsWith(QLatin1String("channelCfg"))) {
       const QStringList tokens = line.split(' ', Qt::SkipEmptyParts);
       if (tokens.size() < 3) {
@@ -294,9 +323,16 @@ void MainWindow::updateRadarConfigFromCfg_(const QStringList &lines) {
       const uint32_t rxChannelEn = tokens[1].toUInt(nullptr, 0);
       const uint32_t txChannelEn = tokens[2].toUInt(nullptr, 0);
       // 0x1111b = 15 -> 4 antennas
-      const int numRxAntennas = std::bitset<4>(rxChannelEn).count();
-      const int numTxAntennas = std::bitset<4>(txChannelEn).count();
+      numRxAntennas = std::bitset<4>(rxChannelEn).count();
+      numTxAntennas = std::bitset<4>(txChannelEn).count();
       rangeProfileChart_->setAntennaCount(numRxAntennas, numTxAntennas);
+      rangeDopplerHeatmap_->setAntennaCount(numRxAntennas, numTxAntennas);
     }
+  }
+
+  if (startFreqGhz > 0.0 && numDopplerBins > 0 && numTxAntennas > 0) {
+    rangeDopplerHeatmap_->setDopplerResolution(
+        dopplerResolutionMps(startFreqGhz, idleTimeUs, rampEndTimeUs,
+                             numDopplerBins, numTxAntennas));
   }
 }

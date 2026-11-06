@@ -17,9 +17,6 @@ public:
   void updateProfile(const std::vector<uint16_t> &rangeProfile);
 
 private:
-  double toRelativeDb(uint16_t raw, double log2linScale,
-                      double dspFftScaleCompAllLog) const;
-
   QChart *chart_;
   QLineSeries *series_;
   QValueAxis *axisX_;

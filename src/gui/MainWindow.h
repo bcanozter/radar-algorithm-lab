@@ -13,6 +13,8 @@ class LogView;
 class RangeProfileChart;
 class ScatterPlot2D;
 class DeviceStatsPanel;
+class RangeDopplerHeatmap;
+
 class MainWindow : public QMainWindow {
   Q_OBJECT
 public:
@@ -39,6 +41,7 @@ private:
   RangeProfileChart *rangeProfileChart_;
   ScatterPlot2D *scatterPlot2D_;
   DeviceStatsPanel *deviceStatsPanel_;
+  RangeDopplerHeatmap *rangeDopplerHeatmap_;
 
   QAction *connectAction_;
   QAction *disconnectAction_;
